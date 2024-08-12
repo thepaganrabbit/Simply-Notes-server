@@ -5,6 +5,6 @@ export default () => ({
       port: parseInt(process.env.MONGO_PORT, 10) || 27017,
       pwd: process.env.MONGO_PWD,
       username: process.env.MONGO_USR
-
-    }
+    },
+    jwtSecret: process.env.JWT_SECRET
   });
