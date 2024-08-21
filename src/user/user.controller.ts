@@ -1,7 +1,8 @@
-import { Controller, Get, HttpStatus, NotAcceptableException, Req, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, HttpStatus, NotAcceptableException, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CustomRequest, LoginObj } from 'src/types';
 import { ExtUserDto } from 'src/dtos/ExtUser.dto';
+import { AuthGuard } from 'src/auth/auth.guard';
 
 @Controller('user')
 export class UserController {
@@ -10,12 +11,8 @@ export class UserController {
     healthCheck() {
         return HttpStatus.OK;
     }
-    async login(@Req() { body }: Request) {
-        return await this.userService.loginUserIn(body as unknown as LoginObj);
-    }
-    async signin(@Req() { body }: Request) {
-        return this.userService.newUser(body as unknown as ExtUserDto);        
-    }
+    @Get('/')
+    @UseGuards(AuthGuard)
     async getUsers(@Req() req: CustomRequest) {
         if(!req.user) {
             return new UnauthorizedException();

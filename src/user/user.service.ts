@@ -5,6 +5,7 @@ import {
   Req,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -21,6 +22,7 @@ export class UserService {
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
     private readonly jwt: JwtService,
+    private readonly configService: ConfigService,
   ) {}
   async newUser(user: ExtUserDto): Promise<CustomResponse<UserOutDto | null>> {
     try {
@@ -37,6 +39,7 @@ export class UserService {
           userId: db_user._id,
           ...rest,
         }),
+        { secret: this.configService.get<string>('jwtSecret') },
       );
       return {
         payload: {
@@ -62,7 +65,9 @@ export class UserService {
       const user = await this.userModel.findOne<User>({ username });
       if (bcrypt.compare(password, user.password)) {
         const { password, _id, ...rest } = user;
-        const jwt = this.jwt.sign(JSON.stringify(rest));
+        const jwt = this.jwt.sign(JSON.stringify(rest), {
+          secret: this.configService.get<string>('jwtSecret'),
+        });
         return {
           success: true,
           code: 200,
@@ -83,7 +88,9 @@ export class UserService {
       };
     }
   }
-  async getUsers(req_user: UserOutDto): Promise<CustomResponse<ExtUserDto[] | null>> {
+  async getUsers(
+    req_user: UserOutDto,
+  ): Promise<CustomResponse<ExtUserDto[] | null>> {
     try {
       const user = await this.userModel.findOne({ _id: req_user.userId });
       if (!user) {
