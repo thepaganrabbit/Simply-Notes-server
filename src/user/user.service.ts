@@ -9,11 +9,12 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+
 import { ExtUserDto } from 'src/dtos/ExtUser.dto';
 import { UserOutDto } from 'src/dtos/UserOut.dto';
 import { User } from 'src/models/User.model';
 import { CustomResponse, LoginObj } from 'src/types';
-import { v4 } from 'uuid';
+import { cleanObject } from 'src/utils/cleaners';
 
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
@@ -65,21 +66,28 @@ export class UserService {
       const user = await this.userModel.findOne<User>({ username });
       if (bcrypt.compare(password, user.password)) {
         const { password, _id, ...rest } = user;
-        const jwt = this.jwt.sign(JSON.stringify(rest), {
+        const cleanedUser = {
+          username: user.username,
+          name: user.name,
+          userId: user._id,
+        }
+        const jwt = this.jwt.sign(cleanedUser, {
           secret: this.configService.get<string>('jwtSecret'),
         });
+
         return {
           success: true,
           code: 200,
           payload: {
             userId: _id,
-            ...rest,
+            ...cleanedUser,
             token: jwt,
-          },
+          } as UserOutDto,
         };
       }
       throw new UnauthorizedException();
     } catch (error) {
+      console.error('logUserIn', error);
       return {
         payload: null,
         code: error.status,
