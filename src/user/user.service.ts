@@ -14,7 +14,6 @@ import { ExtUserDto } from 'src/dtos/ExtUser.dto';
 import { UserOutDto } from 'src/dtos/UserOut.dto';
 import { User } from 'src/models/User.model';
 import { CustomResponse, LoginObj } from 'src/types';
-import { cleanObject } from 'src/utils/cleaners';
 
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
