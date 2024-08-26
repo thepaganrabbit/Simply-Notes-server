@@ -5,18 +5,25 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { DictionaryItem, DictionarySchema } from 'src/models/Dictionary';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { Task, TaskSchema } from 'src/models/Task';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: DictionaryItem.name, schema: DictionarySchema }]), JwtModule.registerAsync({
-    imports: [ConfigModule],
-    useFactory: (configService: ConfigService) => ({
-      global: true, 
-      secret: configService.get<string>('jwtSecret'),
-      signOptions: { expiresIn: '5m' },
+  imports: [
+    MongooseModule.forFeature([
+      { name: DictionaryItem.name, schema: DictionarySchema },
+      { name: Task.name, schema: TaskSchema },
+    ]),
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        global: true,
+        secret: configService.get<string>('jwtSecret'),
+        signOptions: { expiresIn: '5m' },
+      }),
+      inject: [ConfigService],
     }),
-    inject: [ConfigService],
-  }),],
+  ],
   controllers: [ContentController],
-  providers: [ContentService]
+  providers: [ContentService],
 })
 export class ContentModule {}

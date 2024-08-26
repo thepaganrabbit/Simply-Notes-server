@@ -19,3 +19,8 @@ export interface CustomResponse <T> {
     message?: string;
     error?: Error | any;
 }
+
+export interface InTask {
+    text: string;
+    userId:string;
+}
