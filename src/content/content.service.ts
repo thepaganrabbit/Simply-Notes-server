@@ -54,55 +54,100 @@ export class ContentService {
       };
     }
   }
-  async addTask(task:InTask): Promise<CustomResponse<Task[]>> {
+  async addTask(task: InTask): Promise<CustomResponse<Task[]>> {
     try {
-        const newTask = new this.taskModel(task);
-        await newTask.save();
-        const tasks = await this.taskModel.find<Task>({});
-        const exists = await this.dictionaryModel.findOne<DictionaryItem>({text: task.text});
-        if(exists) {
-            this.dictionaryModel.updateOne({_id: exists._id}, {commonality: exists.commonality += 1 });
-        } else {
-            const newDictInstance = new this.dictionaryModel({text: newTask.text});
-            await newDictInstance.save();
-        }
+      // see if an active task exists in the list
+      const containsTask = await this.taskModel
+        .find<Task>({ text: task.text })
+        .where('completed')
+        .equals(true);
+      if (containsTask.length > 0) {
+        const allTasks = await this.taskModel.find<Task>({});
         return {
           code: 200,
-          payload: tasks,
+          payload: allTasks,
           success: true,
-          message: 'Successfully added task',
-        };
-      } catch (error) {
-        return {
-          payload: null,
-          code: HttpStatus.BAD_REQUEST,
-          success: false,
-          message: error.message,
+          message: 'Task already exists',
         };
       }
+
+      const newTask = new this.taskModel(task);
+      await newTask.save();
+      const tasks = await this.taskModel.find<Task>({});
+      const exists = await this.dictionaryModel.findOne<DictionaryItem>({
+        text: task.text,
+      });
+      if (exists) {
+        const upgradeCommonality = exists.commonality + 1;
+        await this.dictionaryModel.updateOne(
+          { _id: exists._id },
+          { commonality: upgradeCommonality },
+        );
+      } else {
+        const newDictInstance = new this.dictionaryModel({
+          text: newTask.text,
+        });
+        await newDictInstance.save();
+      }
+      return {
+        code: 200,
+        payload: tasks,
+        success: true,
+        message: 'Successfully added task',
+      };
+    } catch (error) {
+      return {
+        payload: null,
+        code: HttpStatus.BAD_REQUEST,
+        success: false,
+        message: error.message,
+      };
+    }
   }
-  async taskStateChanged(id:string): Promise<CustomResponse<Task[]>> {
+  async taskStateChanged(id: string): Promise<CustomResponse<Task[]>> {
     try {
-       
-        const task = await this.taskModel.findOne<Task>({_id: id});
-        if(!task) throw new BadRequestException();
-        const updatedTask = await this.taskModel.updateOne<Task>({_id: id}, {completed: task.completed ? false : true});
-        if(!updatedTask.acknowledged) throw new BadRequestException();
-        const tasks = await this.taskModel.find({});
-        return {
-          code: 200,
-          payload: tasks,
-          success: true,
-          message: 'Successfully updated task',
-        };
-      } catch (error) {
-        return {
-          payload: null,
-          code: HttpStatus.BAD_REQUEST,
-          success: false,
-          message: error.message,
-        };
-      }
+      const task = await this.taskModel.findOne<Task>({ _id: id });
+      if (!task) throw new BadRequestException();
+      const updatedTask = await this.taskModel.updateOne<Task>(
+        { _id: id },
+        { completed: task.completed ? false : true },
+      );
+      if (!updatedTask.acknowledged) throw new BadRequestException();
+      const tasks = await this.taskModel.find({});
+      return {
+        code: 200,
+        payload: tasks,
+        success: true,
+        message: 'Successfully updated task',
+      };
+    } catch (error) {
+      return {
+        payload: null,
+        code: HttpStatus.BAD_REQUEST,
+        success: false,
+        message: error.message,
+      };
+    }
   }
-  
+
+  async deleteTask(id: string): Promise<CustomResponse<Task[]>> {
+    try {
+      const task = await this.taskModel.deleteOne({ _id: id });
+      if (!task.acknowledged) throw new BadRequestException();
+      const tasks = await this.taskModel.find({});
+      return {
+        code: 200,
+        payload: tasks,
+        success: true,
+        message: 'Successfully deleted task',
+      };
+    } catch (error) {
+      return {
+        payload: null,
+        code: HttpStatus.BAD_REQUEST,
+        success: false,
+        message: error.message,
+      };
+    }
+  }
 }

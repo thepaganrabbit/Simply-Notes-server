@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ContentService } from './content.service';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { InTask } from 'src/types';
@@ -25,5 +25,10 @@ export class ContentController {
     @UseGuards(AuthGuard)
     async completeTask(@Query('id') id: string ) {
         return await this.contentService.taskStateChanged(id);
+    }
+    @Delete('/task')
+    @UseGuards(AuthGuard)
+    async deleteTask(@Query('id') id: string ) {
+        return await this.contentService.deleteTask(id);
     }
 }
