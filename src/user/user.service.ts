@@ -8,8 +8,8 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
+import * as times from 'moment';
 import { Model } from 'mongoose';
-
 import { ExtUserDto } from 'src/dtos/ExtUser.dto';
 import { UserOutDto } from 'src/dtos/UserOut.dto';
 import { User } from 'src/models/User.model';
@@ -35,11 +35,14 @@ export class UserService {
       const user_added = new this.userModel(new_user);
       const db_user = await user_added.save();
       const jwt = this.jwt.sign(
-        JSON.stringify({
+        {
           userId: db_user._id,
           ...rest,
-        }),
-        { secret: this.configService.get<string>('jwtSecret') },
+        },
+        {
+          expiresIn: '5m',
+          secret: this.configService.get<string>('jwtSecret'),
+        },
       );
       return {
         payload: {
@@ -69,8 +72,9 @@ export class UserService {
           username: user.username,
           name: user.name,
           userId: user._id,
-        }
+        };
         const jwt = this.jwt.sign(cleanedUser, {
+          expiresIn: '5m',
           secret: this.configService.get<string>('jwtSecret'),
         });
 

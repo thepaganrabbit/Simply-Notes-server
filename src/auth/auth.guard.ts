@@ -2,7 +2,7 @@ import { CanActivate, ExecutionContext, ForbiddenException, Injectable, Unauthor
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Observable } from 'rxjs';
-
+import  * as time from 'moment';
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(private readonly jwt: JwtService, private readonly configService: ConfigService) {}
@@ -15,10 +15,10 @@ export class AuthGuard implements CanActivate {
         const token = request.headers.authorization.split(' ')[1];
         const isValid = this.jwt.verify(token, {secret: this.configService.get<string>('jwtSecret')});
        if(!isValid) throw new UnauthorizedException();
-        request.user = this.jwt.decode(token);
+       const {exp, ...user} = this.jwt.decode(token);
+        request.user = user;
         return true
       } catch (error) {
-        console.error(error)
         return false;
       }
     }
