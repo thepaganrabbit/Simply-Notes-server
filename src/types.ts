@@ -1,10 +1,8 @@
 import { Request } from "@nestjs/common"
-import { User } from "./models/User.model"
-import { UserOutDto } from "./dtos/UserOut.dto";
+import IntUserDto from "./dtos/IntUser.dto";
 
 export interface CustomRequest extends Request {
-    isAdmin?: boolean | undefined;
-    user?: UserOutDto |  undefined;
+    user?: IntUserDto |  undefined;
 }
 
 export type LoginObj = {

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   HttpCode,
   Injectable,
   NotAcceptableException,
@@ -11,6 +12,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import * as times from 'moment';
 import { Model } from 'mongoose';
 import { ExtUserDto } from 'src/dtos/ExtUser.dto';
+import IntUserDto from 'src/dtos/IntUser.dto';
 import { UserOutDto } from 'src/dtos/UserOut.dto';
 import { User } from 'src/models/User.model';
 import { CustomResponse, LoginObj } from 'src/types';
@@ -40,7 +42,7 @@ export class UserService {
           ...rest,
         },
         {
-          expiresIn: '5m',
+          expiresIn: '30zm',
           secret: this.configService.get<string>('jwtSecret'),
         },
       );
@@ -66,18 +68,20 @@ export class UserService {
     }
     try {
       const user = await this.userModel.findOne<User>({ username });
+      if(!user) throw new BadRequestException();
       if (bcrypt.compare(password, user.password)) {
         const { password, _id, ...rest } = user;
         const cleanedUser = {
           username: user.username,
           name: user.name,
           userId: user._id,
+          isAdmin: user.isAdmin
         };
         const jwt = this.jwt.sign(cleanedUser, {
-          expiresIn: '5m',
+          expiresIn: '1d',
           secret: this.configService.get<string>('jwtSecret'),
         });
-
+        delete cleanedUser['isAdmin'];
         return {
           success: true,
           code: 200,
@@ -100,24 +104,22 @@ export class UserService {
     }
   }
   async getUsers(
-    req_user: UserOutDto,
+    req_user: IntUserDto,
   ): Promise<CustomResponse<ExtUserDto[] | null>> {
     try {
-      const user = await this.userModel.findOne({ _id: req_user.userId });
-      if (!user) {
+      if (!req_user.isAdmin) {
         throw new UnauthorizedException();
       }
-      if (!user.isAdmin) {
-        throw new UnauthorizedException();
-      }
+      const users = (await this.userModel.find({})).map((user: any) => {
+        const { _doc } = user;
+        const {password, __v, _id, ...rest} = _doc;
+        return {
+          userId: _id,
+          ...rest,
+        };
+      }) as unknown as ExtUserDto[];
       return {
-        payload: (await this.userModel.find({})).map((user) => {
-          const { password, _id, ...rest } = user;
-          return {
-            userId: _id,
-            rest,
-          };
-        }) as unknown as ExtUserDto[],
+        payload: users,
         code: 200,
         success: true,
       };

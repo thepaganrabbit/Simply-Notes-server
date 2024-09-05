@@ -1,4 +1,4 @@
-import { Controller, Get, HttpStatus, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Controller, ForbiddenException, Get, HttpStatus, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { ExtUserDto } from 'src/dtos/ExtUser.dto';
 import { CustomRequest, LoginObj, CustomResponse } from 'src/types';
 import { UserService } from 'src/user/user.service';
@@ -28,6 +28,20 @@ export class AuthController {
             success: true,
             code: 200,
             message: 'Token still is valid.',
+            error: null
+        }
+    }
+
+    @Get('/is-admin')
+    @UseGuards(AuthGuard)
+    verifyAdminAccount(@Req() {  user }: CustomRequest): CustomResponse<boolean> {
+        if(!user) throw new UnauthorizedException();
+        if(!user.isAdmin) throw new ForbiddenException();
+        return {
+            payload: true,
+            success: true,
+            code: 200,
+            message: 'Welcome admin.',
             error: null
         }
     }

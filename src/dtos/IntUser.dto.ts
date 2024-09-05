@@ -1,8 +1,8 @@
-export class IntUserDto {
-    constructor(
-      public name: string,
-      public username: string,
-      public password: string,
-    ) {}
-  }
-  
+export default class IntUserDto {
+  constructor(
+    public username: string,
+    public name: string,
+    public userId: string,
+    public isAdmin: boolean,
+  ) {}
+}
