@@ -219,4 +219,42 @@ export class ContentService {
       };
     }
   }
+  async deleteACategory(id: string): Promise<CustomResponse<number>> {
+    try {
+      const category = await this.categoryModel.deleteOne({ _id: id });
+      if (!category.acknowledged) throw new BadRequestException();
+      return {
+        code: 204,
+        payload: 204,
+        success: true,
+        message: 'Successfully deleted task',
+      };
+    } catch (error) {
+      return {
+        payload: null,
+        code: HttpStatus.BAD_REQUEST,
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+  async deleteAWord(id: string): Promise<CustomResponse<number>> {
+    try {
+      const word = await this.dictionaryModel.deleteOne({ _id: id });
+      if (!word.acknowledged) throw new BadRequestException();
+      return {
+        code: 204,
+        payload: 204,
+        success: true,
+        message: 'Successfully deleted task',
+      };
+    } catch (error) {
+      return {
+        payload: null,
+        code: HttpStatus.BAD_REQUEST,
+        success: false,
+        message: error.message,
+      };
+    }
+  }
 }

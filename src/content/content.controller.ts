@@ -53,6 +53,16 @@ export class ContentController {
   async completeTask(@Query('id') id: string) {
     return await this.contentService.taskStateChanged(id);
   }
+  @Delete('/category')
+  @UseGuards(AuthGuard)
+  async deleteCategory(@Query('id') id: string) {
+    return await this.contentService.deleteACategory(id);
+  }
+  @Delete('/dictionary')
+  @UseGuards(AuthGuard)
+  async deletWord(@Query('id') id: string) {
+    return await this.contentService.deleteAWord(id);
+  }
   @Delete('/task')
   @UseGuards(AuthGuard)
   async deleteTask(@Query('id') id: string) {
