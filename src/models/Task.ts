@@ -8,6 +8,8 @@ export class Task {
     _id?: Types.ObjectId;
     @Prop()
     text: string;
+    @Prop({default: 'General'})
+    category: string;
     @Prop({default: false})
     completed: boolean;
     @Prop()

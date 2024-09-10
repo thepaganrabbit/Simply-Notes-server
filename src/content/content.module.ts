@@ -6,12 +6,14 @@ import { DictionaryItem, DictionarySchema } from 'src/models/Dictionary';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Task, TaskSchema } from 'src/models/Task';
+import { Category, CategorySchema } from 'src/models/Category';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: DictionaryItem.name, schema: DictionarySchema },
       { name: Task.name, schema: TaskSchema },
+      { name: Category.name, schema: CategorySchema },
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],

@@ -1,9 +1,11 @@
 import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { ExtCategorysDto } from 'src/dtos/ExtCatagoryDto';
+import { Category } from 'src/models/Category';
 import { DictionaryItem } from 'src/models/Dictionary';
 import { Task } from 'src/models/Task';
-import { CustomResponse, InTask } from 'src/types';
+import { CustomResponse, InTask, StandardCategory } from 'src/types';
 
 @Injectable()
 export class ContentService {
@@ -11,10 +13,16 @@ export class ContentService {
     @InjectModel(DictionaryItem.name)
     private dictionaryModel: Model<DictionaryItem>,
     @InjectModel(Task.name) private taskModel: Model<Task>,
+    @InjectModel(Category.name) private categoryModel: Model<Category>,
   ) {}
   async getWords(): Promise<CustomResponse<DictionaryItem[]>> {
     try {
-      const items = await this.dictionaryModel.find({});
+      let items = await this.dictionaryModel.find({});
+      if (!items || items.length <= 0) {
+        items = [];
+      } else {
+        items = items.sort((a, b) => a.commonality - b.commonality);
+      }
       return {
         code: 200,
         payload: items,
@@ -44,6 +52,67 @@ export class ContentService {
           items.length <= 0
             ? 'You have no tasks...'
             : 'Successful retrieval of tasks.',
+      };
+    } catch (error) {
+      return {
+        payload: null,
+        code: HttpStatus.BAD_REQUEST,
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async getCategories(admin: boolean): Promise<CustomResponse<Category[]>> {
+    try {
+      let categories = [];
+      if (admin) {
+        categories = await this.categoryModel.find<Category>({});
+      } else {
+        categories = (await this.categoryModel.find<StandardCategory>({})).map(
+          (category) => {
+            return {
+              _id: category._id,
+              text: category.text,
+            };
+          },
+        );
+      }
+      return {
+        code: 200,
+        payload: categories,
+        success: true,
+        message:
+          categories.length <= 0
+            ? 'There are no categories...'
+            : 'Successful retrieval of categories.',
+      };
+    } catch (error) {
+      return {
+        payload: null,
+        code: HttpStatus.BAD_REQUEST,
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  async addNewCategory(
+    extCategory: ExtCategorysDto,
+  ): Promise<CustomResponse<Category[]>> {
+    try {
+      const category = new this.categoryModel({
+        text: extCategory.text,
+        createdBy: extCategory.createdBY,
+      });
+
+      await category.save();
+      const allCategories = await this.categoryModel.find<Category>({});
+      return {
+        code: 200,
+        payload: allCategories,
+        success: true,
+        message: 'Successfully added category.',
       };
     } catch (error) {
       return {

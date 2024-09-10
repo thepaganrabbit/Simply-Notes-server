@@ -21,4 +21,10 @@ export interface CustomResponse <T> {
 export interface InTask {
     text: string;
     userId:string;
+    category?: string;
+}
+
+export interface StandardCategory {
+    _id: string;
+    text: string;
 }
