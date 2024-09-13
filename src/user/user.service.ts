@@ -13,6 +13,7 @@ import * as times from 'moment';
 import { Model } from 'mongoose';
 import { ExtUserDto } from 'src/dtos/ExtUser.dto';
 import IntUserDto from 'src/dtos/IntUser.dto';
+import { UpdateUserDto } from 'src/dtos/UpdateUserDto';
 import { UserOutDto } from 'src/dtos/UserOut.dto';
 import { User } from 'src/models/User.model';
 import { CustomResponse, LoginObj } from 'src/types';
@@ -35,6 +36,7 @@ export class UserService {
         ...rest,
       };
       const user_added = new this.userModel(new_user);
+      console.log('What the user is going in', user_added);
       const db_user = await user_added.save();
       const jwt = this.jwt.sign(
         {
@@ -42,13 +44,14 @@ export class UserService {
           ...rest,
         },
         {
-          expiresIn: '30zm',
+          expiresIn: '30m',
           secret: this.configService.get<string>('jwtSecret'),
         },
       );
       return {
         payload: {
           userId: db_user._id,
+          isAdmin: db_user.isAdmin,
           ...rest,
           token: jwt,
         },
@@ -68,14 +71,14 @@ export class UserService {
     }
     try {
       const user = await this.userModel.findOne<User>({ username });
-      if(!user) throw new BadRequestException();
+      if (!user) throw new BadRequestException();
       if (bcrypt.compare(password, user.password)) {
         const { password, _id, ...rest } = user;
         const cleanedUser = {
           username: user.username,
           name: user.name,
           userId: user._id,
-          isAdmin: user.isAdmin
+          isAdmin: user.isAdmin,
         };
         const jwt = this.jwt.sign(cleanedUser, {
           expiresIn: '1d',
@@ -112,7 +115,7 @@ export class UserService {
       }
       const users = (await this.userModel.find({})).map((user: any) => {
         const { _doc } = user;
-        const {password, __v, _id, ...rest} = _doc;
+        const { password, __v, _id, ...rest } = _doc;
         return {
           userId: _id,
           ...rest,
@@ -121,6 +124,104 @@ export class UserService {
       return {
         payload: users,
         code: 200,
+        success: true,
+      };
+    } catch (error) {
+      return {
+        payload: null,
+        success: false,
+        code: 404,
+        message: 'failed to authorize the login',
+        error: error.message,
+      };
+    }
+  }
+
+  async getUser(id: string): Promise<CustomResponse<ExtUserDto | null>> {
+    try {
+      const found_user = await this.userModel.findOne({ _id: id });
+      if (!found_user) {
+        throw new NotAcceptableException('No user can be found with that id');
+      }
+      const { _doc } = await found_user as any;
+      const { password, __v, _id, ...rest } = _doc;
+      return {
+        payload: {
+          userId: _id,
+          ...rest,
+        } as unknown as ExtUserDto,
+        code: 200,
+        success: true,
+      };
+    } catch (error) {
+      return {
+        payload: null,
+        success: false,
+        code: 404,
+        message: 'failed to authorize the login',
+        error: error.message,
+      };
+    }
+  }
+
+  async updateUser(
+    updatedUser: UpdateUserDto,
+  ): Promise<CustomResponse<ExtUserDto[] | null>> {
+    try {
+      let updated_user = {};
+      if (updatedUser.password !== null) {
+        updated_user = await this.userModel.updateOne(
+          { _id: updatedUser.userId },
+          {
+            name: updatedUser.name,
+            username: updatedUser.username,
+            password: updatedUser.password,
+            isAdmin: updatedUser.isAdmin,
+          },
+        );
+      } else {
+        const pwd = await this.userModel.findOne({ _id: updatedUser.userId });
+        updated_user = await this.userModel.updateOne(
+          { _id: updatedUser.userId },
+          {
+            name: updatedUser.name,
+            username: updatedUser.username,
+            password: await pwd.password,
+            isAdmin: updatedUser.isAdmin,
+          },
+        );
+      }
+      const users = (await this.userModel.find({})).map((user: any) => {
+        const { _doc } = user;
+        const { password, __v, _id, ...rest } = _doc;
+        return {
+          userId: _id,
+          ...rest,
+        };
+      }) as unknown as ExtUserDto[];
+      return {
+        payload: users,
+        code: 200,
+        success: true,
+      };
+    } catch (error) {
+      return {
+        payload: null,
+        success: false,
+        code: 404,
+        message: 'failed to authorize the login',
+        error: error.message,
+      };
+    }
+  }
+
+  async deleteUser(id: string): Promise<CustomResponse<number>> {
+    try {
+      const deletedUser = await this.userModel.deleteOne({_id: id});
+      if(!deletedUser.acknowledged) throw new BadRequestException('Unable to delete the user specified');
+      return {
+        payload: 204,
+        code: 204,
         success: true,
       };
     } catch (error) {
