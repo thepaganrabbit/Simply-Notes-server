@@ -73,7 +73,7 @@ export class UserService {
       const user = await this.userModel.findOne<User>({ username });
       if (!user) throw new BadRequestException();
       if (bcrypt.compare(password, user.password)) {
-        const { password, _id, ...rest } = user;
+        const { password, _id, ..._ } = user;
         const cleanedUser = {
           username: user.username,
           name: user.name,
@@ -84,7 +84,7 @@ export class UserService {
           expiresIn: '1d',
           secret: this.configService.get<string>('jwtSecret'),
         });
-        delete cleanedUser['isAdmin'];
+
         return {
           success: true,
           code: 200,

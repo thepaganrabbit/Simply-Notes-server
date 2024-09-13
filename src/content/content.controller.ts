@@ -7,6 +7,7 @@ import {
   Post,
   Query,
   Req,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { ContentService } from './content.service';
@@ -26,8 +27,14 @@ export class ContentController {
   }
   @Get('/tasks')
   @UseGuards(AuthGuard)
-  async getUsersTasks() {
-    return await this.contentService.getTasks();
+  async getUsersTasks(@Req() {user}: CustomRequest) {
+    return await this.contentService.getTasks(user.userId);
+  }
+  @Get('/tasks/all')
+  @UseGuards(AuthGuard)
+  async getAllTasks(@Req() {user}: CustomRequest) {
+    if(!user.isAdmin) throw new UnauthorizedException();
+    return await this.contentService.getTasksAdmin();
   }
   @Get('/categories')
   @UseGuards(AuthGuard)
@@ -36,8 +43,8 @@ export class ContentController {
   }
   @Post('/add-task')
   @UseGuards(AuthGuard)
-  async crateTask(@Body() task: InTask) {
-    return await this.contentService.addTask(task);
+  async crateTask(@Body() task: InTask, @Req() {user}: CustomRequest) {
+    return await this.contentService.addTask(task, user.userId);
   }
   @Post('/add-category')
   @UseGuards(AuthGuard)
@@ -50,8 +57,8 @@ export class ContentController {
   }
   @Patch('/taskStatus')
   @UseGuards(AuthGuard)
-  async completeTask(@Query('id') id: string) {
-    return await this.contentService.taskStateChanged(id);
+  async completeTask(@Query('id') id: string, @Req() {user}: CustomRequest) {
+    return await this.contentService.taskStateChanged(id, user.userId);
   }
   @Delete('/category')
   @UseGuards(AuthGuard)
@@ -65,7 +72,7 @@ export class ContentController {
   }
   @Delete('/task')
   @UseGuards(AuthGuard)
-  async deleteTask(@Query('id') id: string) {
-    return await this.contentService.deleteTask(id);
+  async deleteTask(@Query('id') id: string, @Req() {user}: CustomRequest) {
+    return await this.contentService.deleteTask(id, user.userId);
   }
 }

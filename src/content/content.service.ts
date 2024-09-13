@@ -41,7 +41,28 @@ export class ContentService {
       };
     }
   }
-  async getTasks(): Promise<CustomResponse<Task[]>> {
+  async getTasks(userId: string): Promise<CustomResponse<Task[]>> {
+    try {
+      const items = await this.taskModel.find({userId });
+      return {
+        code: 200,
+        payload: items,
+        success: true,
+        message:
+          items.length <= 0
+            ? 'You have no tasks...'
+            : 'Successful retrieval of tasks.',
+      };
+    } catch (error) {
+      return {
+        payload: null,
+        code: HttpStatus.BAD_REQUEST,
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+  async getTasksAdmin(): Promise<CustomResponse<Task[]>> {
     try {
       const items = await this.taskModel.find({});
       return {
@@ -62,6 +83,7 @@ export class ContentService {
       };
     }
   }
+
 
   async getCategories(admin: boolean): Promise<CustomResponse<Category[]>> {
     try {
@@ -123,7 +145,7 @@ export class ContentService {
       };
     }
   }
-  async addTask(task: InTask): Promise<CustomResponse<Task[]>> {
+  async addTask(task: InTask, id: string): Promise<CustomResponse<Task[]>> {
     try {
       // see if an active task exists in the list
       const containsTask = await this.taskModel
@@ -173,7 +195,7 @@ export class ContentService {
       };
     }
   }
-  async taskStateChanged(id: string): Promise<CustomResponse<Task[]>> {
+  async taskStateChanged(id: string, userId: string): Promise<CustomResponse<Task[]>> {
     try {
       const task = await this.taskModel.findOne<Task>({ _id: id });
       if (!task) throw new BadRequestException();
@@ -182,7 +204,7 @@ export class ContentService {
         { completed: task.completed ? false : true },
       );
       if (!updatedTask.acknowledged) throw new BadRequestException();
-      const tasks = await this.taskModel.find({});
+      const tasks = await this.taskModel.find({_id: userId});
       return {
         code: 200,
         payload: tasks,
@@ -199,11 +221,11 @@ export class ContentService {
     }
   }
 
-  async deleteTask(id: string): Promise<CustomResponse<Task[]>> {
+  async deleteTask(id: string, userId: string): Promise<CustomResponse<Task[]>> {
     try {
       const task = await this.taskModel.deleteOne({ _id: id });
       if (!task.acknowledged) throw new BadRequestException();
-      const tasks = await this.taskModel.find({});
+      const tasks = await this.taskModel.find({_id: userId});
       return {
         code: 200,
         payload: tasks,
